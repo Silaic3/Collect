@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Collectsy - Blindbox Collector</title>
+  <meta name="theme-color" content="#1a1410">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Personal blind box figure tracking PWA">
+  
+  <style>
+    :root {
+      --bg-dark: #16120e;
+      --card-bg: #221c16;
+      --card-border: #332a21;
+      --accent-yellow: #e5b04c;
+      --accent-pink: #d86888;
+      --text-main: #f3ece4;
+      --text-muted: #a39587;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      padding-bottom: 80px;
+      max-width: 500px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* Header Navigation */
+    header {
+      padding: 18px 20px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-dark);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+    .back-btn {
+      background: #2b231c;
+      border: none;
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* Stats Banner */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 12px 20px;
+      text-align: center;
+    }
+    .stat-box { background: var(--card-bg); padding: 10px 4px; border-radius: 14px; }
+    .stat-num { font-size: 1.3rem; font-weight: 800; color: var(--accent-yellow); }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Search & Filter Bar */
+    .search-container { padding: 10px 20px; }
+    .search-input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    /* Tab Navigation inside Series view */
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      background: var(--card-bg);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .tab.active { background: #3b3026; color: var(--text-main); border: 1px solid var(--accent-yellow); }
+
+    /* Cards & Grids */
+    .section-list { padding: 10px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .series-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .series-info { flex: 1; }
+    .series-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+    .series-subtitle { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-bottom: 10px; }
+    .progress-bg { background: #120e0b; height: 6px; border-radius: 3px; width: 80%; overflow: hidden; }
+    .progress-fill { background: var(--accent-yellow); height: 100%; width: 0%; transition: width 0.3s; }
+    .series-avatar { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; background: #2e261f; }
+
+    /* Figure Grid */
+    .figure-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 10px 20px;
+    }
+    .figure-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 10px;
+      text-align: center;
+      position: relative;
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+    }
+    .figure-card.owned { border-color: var(--accent-yellow); }
+    .figure-card.wanted { border-color: var(--accent-pink); }
+    .status-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+    .badge-owned { background: var(--accent-yellow); color: #000; }
+    .badge-wanted { background: var(--accent-pink); color: #fff; }
+    .figure-img { width: 100%; aspect-ratio: 1; border-radius: 12px; object-fit: cover; background: #1a1511; }
+    .figure-name { font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+
+    /* Floating Action Button */
+    .fab {
+      position: fixed;
+      bottom: 85px;
+      right: calc(50% - 230px + 20px);
+      background: var(--accent-yellow);
+      color: #1a1410;
+      padding: 14px 22px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      box-shadow: 0 4px 14px rgba(229, 176, 76, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 100;
+    }
+    @media (max-width: 500px) { .fab { right: 20px; } }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 500px;
+      margin: 0 auto;
+      background: #18130f;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 16px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .nav-item.active { color: var(--accent-yellow); }
+
+    /* Modal Form */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 200;
+      justify-content: center;
+      align-items: flex-end;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 500px;
+      border-radius: 24px 24px 0 0;
+      padding: 24px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-dark);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      color: var(--text-main);
+      outline: none;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent-yellow);
+      border: none;
+      border-radius: 14px;
+      font-weight: 700;
+      color: #120e0b;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header>
+    <button class="back-btn" id="backBtn" onclick="goHome()" style="display:none;">←</button>
+    <h1 id="headerTitle">Your Shelf</h1>
+    <div></div>
+  </header>
+
+  <!-- Category View (Home Screen) -->
+  <div id="homeView">
+    <div class="section-list" id="categoryList"></div>
+  </div>
+
+  <!-- Series View -->
+  <div id="seriesView" style="display:none;">
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num" id="statShelf">0</div><div class="stat-label">on shelf</div></div>
+      <div class="stat-box"><div class="stat-num" id="statWanted">0</div><div class="stat-label">wanted</div></div>
+      <div class="stat-box"><div class="stat-num" id="statSecrets">0</div><div class="stat-label">secrets</div></div>
+      <div class="stat-box"><div class="stat-num" id="statDone">0</div><div class="stat-label">sets done</div></div>
+    </div>
+
+    <div class="search-container">
+      <input type="text" class="search-input" id="searchBar" placeholder="Search figures..." onkeyup="renderFigures()">
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab active" onclick="setFilter('all', this)">All</div>
+      <div class="tab" onclick="setFilter('shelf', this)">Shelf</div>
+      <div class="tab" onclick="setFilter('wanted', this)">Wanted</div>
+      <div class="tab" onclick="setFilter('missing', this)">Missing</div>
+    </div>
+
+    <div class="figure-grid" id="figureGrid"></div>
+  </div>
+
+  <!-- Add Button -->
+  <button class="fab" onclick="openModal()">+ Add Item</button>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active">🏠<span>shelf</span></div>
+    <div class="nav-item">🩷<span>wishlist</span></div>
+    <div class="nav-item">👥<span>social</span></div>
+    <div class="nav-item">👤<span>you</span></div>
+  </div>
+
+  <!-- Modal for Adding New Item -->
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom:16px;">Add Figure or Series</h2>
+      <div class="form-group">
+        <label>Character Category</label>
+        <select id="inputCategory">
+          <option value="Hirono">Hirono</option>
+          <option value="Skullpanda">Skullpanda</option>
+          <option value="Dimoo">Dimoo</option>
+          <option value="Bearbrick">Bearbrick</option>
+          <option value="POP BEAN">POP BEAN</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Series Name (e.g. Harry Potter, Little Mischief)</label>
+        <input type="text" id="inputSeries" placeholder="Enter series name">
+      </div>
+      <div class="form-group">
+        <label>Figure Name</label>
+        <input type="text" id="inputName" placeholder="Enter figure name">
+      </div>
+      <div class="form-group">
+        <label>Image URL (Optional)</label>
+        <input type="url" id="inputImg" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="inputStatus">
+          <option value="shelf">On Shelf</option>
+          <option value="wanted">Wanted</option>
+          <option value="missing">Missing</option>
+          <option value="secret">Secret (Owned)</option>
+        </select>
+      </div>
+      <button class="submit-btn" onclick="saveItem()">Save to Collection</button>
+      <button class="submit-btn" style="background:transparent; color:var(--text-muted);" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    // Initial Default Data
+    const initialData = [
+      { id: 1, category: 'Hirono', series: 'Harry Potter', name: 'Albus Dumbledore', status: 'missing', img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' },
+      { id: 2, category: 'Hirono', series: 'Harry Potter', name: 'Draco Malfoy', status: 'wanted', img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150' },
+      { id: 3, category: 'Hirono', series: 'Harry Potter', name: 'Severus Snape', status: 'shelf', img: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=150' },
+      { id: 4, category: 'Skullpanda', series: 'The Warmth', name: 'The Lover', status: 'shelf', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150' },
+      { id: 5, category: 'Dimoo', series: 'By Your Side', name: 'Flower Boy', status: 'wanted', img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150' }
+    ];
+
+    let collection = JSON.parse(localStorage.getItem('collectsy_data')) || initialData;
+    let currentCategory = null;
+    let currentFilter = 'all';
+
+    function saveData() {
+      localStorage.setItem('collectsy_data', JSON.stringify(collection));
+    }
+
+    function renderCategories() {
+      const categoryList = document.getElementById('categoryList');
+      const categories = ['Hirono', 'Skullpanda', 'Dimoo', 'Bearbrick', 'POP BEAN'];
+      
+      categoryList.innerHTML = categories.map(cat => {
+        const items = collection.filter(i => i.category === cat);
+        const owned = items.filter(i => i.status === 'shelf' || i.status === 'secret').length;
+        const total = items.length || 0;
+        const progress = total ? Math.round((owned / total) * 100) : 0;
+        const sampleImg = items[0]?.img || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150';
+
+        return `
+          <div class="series-card" onclick="openCategory('${cat}')">
+            <div class="series-info">
+              <div class="series-title">${cat}</div>
+              <div class="series-subtitle">personal shelf tracking</div>
+              <div class="progress-bg"><div class="progress-fill" style="width: ${progress}%"></div></div>
+              <span style="font-size:0.75rem; color: var(--text-muted); margin-top:4px; display:inline-block;">${owned}/${total} collected</span>
+            </div>
+            <img class="series-avatar" src="${sampleImg}" alt="${cat}">
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openCategory(category) {
+      currentCategory = category;
+      document.getElementById('homeView').style.display = 'none';
+      document.getElementById('seriesView').style.display = 'block';
+      document.getElementById('backBtn').style.display = 'block';
+      document.getElementById('headerTitle').innerText = category;
+      renderFigures();
+    }
+
+    function goHome() {
+      currentCategory = null;
+      document.getElementById('homeView').style.display = 'block';
+      document.getElementById('seriesView').style.display = 'none';
+      document.getElementById('backBtn').style.display = 'none';
+      document.getElementById('headerTitle').innerText = 'Your Shelf';
+      renderCategories();
+    }
+
+    function setFilter(filter, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      currentFilter = filter;
+      renderFigures();
+    }
+
+    function renderFigures() {
+      let items = collection.filter(i => i.category === currentCategory);
+      const searchQuery = document.getElementById('searchBar').value.toLowerCase();
+
+      // Stats Update
+      document.getElementById('statShelf').innerText = items.filter(i => i.status === 'shelf').length;
+      document.getElementById('statWanted').innerText = items.filter(i => i.status === 'wanted').length;
+      document.getElementById('statSecrets').innerText = items.filter(i => i.status === 'secret').length;
+      document.getElementById('statDone').innerText = Math.floor(items.filter(i => i.status === 'shelf').length / 12);
+
+      if (currentFilter !== 'all') {
+        items = items.filter(i => i.status === currentFilter);
+      }
+      if (searchQuery) {
+        items = items.filter(i => i.name.toLowerCase().includes(searchQuery) || i.series.toLowerCase().includes(searchQuery));
+      }
+
+      const grid = document.getElementById('figureGrid');
+      grid.innerHTML = items.map(item => `
+        <div class="figure-card ${item.status}" onclick="toggleStatus(${item.id})">
+          ${item.status === 'shelf' || item.status === 'secret' ? '<div class="status-badge badge-owned">✓</div>' : ''}
+          ${item.status === 'wanted' ? '<div class="status-badge badge-wanted">♥</div>' : ''}
+          <img class="figure-img" src="${item.img}" alt="${item.name}">
+          <div class="figure-name">${item.name}</div>
+          <div style="font-size:0.65rem; color:var(--text-muted);">${item.series}</div>
+        </div>
+      `).join('');
+    }
+
+    function toggleStatus(id) {
+      const item = collection.find(i => i.id === id);
+      if (item) {
+        const statuses = ['missing', 'wanted', 'shelf', 'secret'];
+        const nextIndex = (statuses.indexOf(item.status) + 1) % statuses.length;
+        item.status = statuses[nextIndex];
+        saveData();
+        renderFigures();
+      }
+    }
+
+    function openModal() { document.getElementById('addModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('addModal').style.display = 'none'; }
+
+    function saveItem() {
+      const category = document.getElementById('inputCategory').value;
+      const series = document.getElementById('inputSeries').value || 'General';
+      const name = document.getElementById('inputName').value || 'New Figure';
+      const img = document.getElementById('inputImg').value || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150';
+      const status = document.getElementById('inputStatus').value;
+
+      collection.push({ id: Date.now(), category, series, name, status, img });
+      saveData();
+      closeModal();
+      if (currentCategory === category) renderFigures();
+      else renderCategories();
+    }
+
+    // Auto-generate Web App Manifest for PWA Support
+    const manifest = {
+      name: "Collectsy - Figure Tracker",
+      short_name: "Collectsy",
+      start_url: "./",
+      display: "standalone",
+      background_color: "#16120e",
+      theme_color: "#16120e",
+      icons: [{ src: "https://cdn-icons-png.flaticon.com/512/3081/3081559.png", sizes: "512x512", type: "image/png" }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = manifestUrl;
+    document.head.appendChild(link);
+
+    // Dynamic Service Worker Registration for Offline Capability
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+        self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
+      `;
+      const swBlob = new Blob([swCode], { type: 'text/javascript' });
+      navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+    }
+
+    renderCategories();
+  </script>
+</body>
+</html>
