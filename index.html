@@ -26,7 +26,7 @@
       background-color: var(--bg-dark);
       color: var(--text-main);
       font-family: var(--font-family);
-      padding-bottom: 80px;
+      padding-bottom: 90px;
       max-width: 500px;
       margin: 0 auto;
       min-height: 100vh;
@@ -66,7 +66,7 @@
     .stat-num { font-size: 1.3rem; font-weight: 800; color: var(--accent-yellow); }
     .stat-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
-    /* Search & Filter Bar */
+    /* Search Bar */
     .search-container { padding: 10px 20px; }
     .search-input {
       width: 100%;
@@ -79,7 +79,7 @@
       outline: none;
     }
 
-    /* Tab Navigation inside Series view */
+    /* Tab Filter Bar */
     .tab-bar {
       display: flex;
       gap: 8px;
@@ -98,7 +98,7 @@
     }
     .tab.active { background: #3b3026; color: var(--text-main); border: 1px solid var(--accent-yellow); }
 
-    /* Cards & Grids */
+    /* Cards & Category List */
     .section-list { padding: 10px 20px; display: flex; flex-direction: column; gap: 14px; }
     .series-card {
       background: var(--card-bg);
@@ -133,24 +133,47 @@
       border: 1px solid var(--card-border);
       cursor: pointer;
     }
-    .figure-card.owned { border-color: var(--accent-yellow); }
+    .figure-card.shelf { border-color: var(--accent-yellow); }
     .figure-card.wanted { border-color: var(--accent-pink); }
+    
     .status-badge {
       position: absolute;
       top: 8px;
       right: 8px;
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.75rem;
+      font-weight: bold;
+      z-index: 2;
     }
     .badge-owned { background: var(--accent-yellow); color: #000; }
     .badge-wanted { background: var(--accent-pink); color: #fff; }
+
+    /* Edit Pencil Icon */
+    .edit-btn {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      z-index: 2;
+      cursor: pointer;
+    }
+
     .figure-img { width: 100%; aspect-ratio: 1; border-radius: 12px; object-fit: cover; background: #1a1511; }
-    .figure-name { font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+    .figure-name { font-size: 0.8rem; font-weight: 600; margin-top: 8px; line-height: 1.2; }
 
     /* Floating Action Button */
     .fab {
@@ -197,12 +220,12 @@
     }
     .nav-item.active { color: var(--accent-yellow); }
 
-    /* Modal Form */
+    /* Modals */
     .modal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       z-index: 200;
       justify-content: center;
       align-items: flex-end;
@@ -213,6 +236,8 @@
       max-width: 500px;
       border-radius: 24px 24px 0 0;
       padding: 24px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; }
@@ -236,6 +261,25 @@
       margin-top: 10px;
       cursor: pointer;
     }
+    .delete-btn {
+      width: 100%;
+      padding: 12px;
+      background: #421318;
+      color: #ff6b6b;
+      border: 1px solid #631b22;
+      border-radius: 14px;
+      font-weight: 600;
+      margin-top: 8px;
+      cursor: pointer;
+    }
+    .img-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      object-fit: cover;
+      margin-top: 8px;
+      background: var(--bg-dark);
+    }
   </style>
 </head>
 <body>
@@ -247,7 +291,7 @@
     <div></div>
   </header>
 
-  <!-- Category View (Home Screen) -->
+  <!-- Category View -->
   <div id="homeView">
     <div class="section-list" id="categoryList"></div>
   </div>
@@ -276,7 +320,7 @@
   </div>
 
   <!-- Add Button -->
-  <button class="fab" onclick="openModal()">+ Add Item</button>
+  <button class="fab" onclick="openAddModal()">+ Add Item</button>
 
   <!-- Bottom Nav -->
   <div class="bottom-nav">
@@ -286,10 +330,10 @@
     <div class="nav-item">👤<span>you</span></div>
   </div>
 
-  <!-- Modal for Adding New Item -->
+  <!-- Add Modal -->
   <div class="modal" id="addModal">
     <div class="modal-content">
-      <h2 style="margin-bottom:16px;">Add Figure or Series</h2>
+      <h2 style="margin-bottom:16px;">Add New Figure</h2>
       <div class="form-group">
         <label>Character Category</label>
         <select id="inputCategory">
@@ -301,16 +345,21 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Series Name (e.g. Harry Potter, Little Mischief)</label>
-        <input type="text" id="inputSeries" placeholder="Enter series name">
+        <label>Series Name</label>
+        <input type="text" id="inputSeries" placeholder="e.g. Harry Potter, Reshape">
       </div>
       <div class="form-group">
         <label>Figure Name</label>
-        <input type="text" id="inputName" placeholder="Enter figure name">
+        <input type="text" id="inputName" placeholder="e.g. Draco Malfoy">
       </div>
       <div class="form-group">
-        <label>Image URL (Optional)</label>
-        <input type="url" id="inputImg" placeholder="https://...">
+        <label>Upload Photo from Device</label>
+        <input type="file" id="inputImgFile" accept="image/*" onchange="handleFileUpload(event, 'previewAdd', 'inputImg')">
+      </div>
+      <div class="form-group">
+        <label>Or Paste Image URL</label>
+        <input type="url" id="inputImg" placeholder="https://..." oninput="document.getElementById('previewAdd').src=this.value">
+        <img id="previewAdd" class="img-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24' fill='%23332a21'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E">
       </div>
       <div class="form-group">
         <label>Status</label>
@@ -321,19 +370,57 @@
           <option value="secret">Secret (Owned)</option>
         </select>
       </div>
-      <button class="submit-btn" onclick="saveItem()">Save to Collection</button>
-      <button class="submit-btn" style="background:transparent; color:var(--text-muted);" onclick="closeModal()">Cancel</button>
+      <button class="submit-btn" onclick="saveNewItem()">Save to Collection</button>
+      <button class="submit-btn" style="background:transparent; color:var(--text-muted);" onclick="closeModal('addModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom:16px;">Edit Item Details</h2>
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label>Figure Name</label>
+        <input type="text" id="editName">
+      </div>
+      <div class="form-group">
+        <label>Series Name</label>
+        <input type="text" id="editSeries">
+      </div>
+      <div class="form-group">
+        <label>Upload New Photo from Device</label>
+        <input type="file" id="editImgFile" accept="image/*" onchange="handleFileUpload(event, 'previewEdit', 'editImg')">
+      </div>
+      <div class="form-group">
+        <label>Or Image URL</label>
+        <input type="text" id="editImg" oninput="document.getElementById('previewEdit').src=this.value">
+        <img id="previewEdit" class="img-preview" src="">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="editStatus">
+          <option value="shelf">On Shelf</option>
+          <option value="wanted">Wanted</option>
+          <option value="missing">Missing</option>
+          <option value="secret">Secret (Owned)</option>
+        </select>
+      </div>
+      <button class="submit-btn" onclick="saveEditedItem()">Update Figure</button>
+      <button class="delete-btn" onclick="deleteCurrentItem()">Delete Figure</button>
+      <button class="submit-btn" style="background:transparent; color:var(--text-muted);" onclick="closeModal('editModal')">Cancel</button>
     </div>
   </div>
 
   <script>
-    // Initial Default Data
+    const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='%23332a21'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E";
+
     const initialData = [
-      { id: 1, category: 'Hirono', series: 'Harry Potter', name: 'Albus Dumbledore', status: 'missing', img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150' },
-      { id: 2, category: 'Hirono', series: 'Harry Potter', name: 'Draco Malfoy', status: 'wanted', img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150' },
-      { id: 3, category: 'Hirono', series: 'Harry Potter', name: 'Severus Snape', status: 'shelf', img: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=150' },
-      { id: 4, category: 'Skullpanda', series: 'The Warmth', name: 'The Lover', status: 'shelf', img: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=150' },
-      { id: 5, category: 'Dimoo', series: 'By Your Side', name: 'Flower Boy', status: 'wanted', img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=150' }
+      { id: 1, category: 'Hirono', series: 'Harry Potter', name: 'Albus Dumbledore', status: 'missing', img: placeholderSvg },
+      { id: 2, category: 'Hirono', series: 'Harry Potter', name: 'Draco Malfoy', status: 'wanted', img: placeholderSvg },
+      { id: 3, category: 'Hirono', series: 'Harry Potter', name: 'Severus Snape', status: 'shelf', img: placeholderSvg },
+      { id: 4, category: 'Skullpanda', series: 'The Warmth', name: 'The Lover', status: 'shelf', img: placeholderSvg },
+      { id: 5, category: 'Dimoo', series: 'By Your Side', name: 'Flower Boy', status: 'wanted', img: placeholderSvg }
     ];
 
     let collection = JSON.parse(localStorage.getItem('collectsy_data')) || initialData;
@@ -353,7 +440,7 @@
         const owned = items.filter(i => i.status === 'shelf' || i.status === 'secret').length;
         const total = items.length || 0;
         const progress = total ? Math.round((owned / total) * 100) : 0;
-        const sampleImg = items[0]?.img || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150';
+        const sampleImg = items.find(i => i.img && i.img !== placeholderSvg)?.img || placeholderSvg;
 
         return `
           <div class="series-card" onclick="openCategory('${cat}')">
@@ -398,7 +485,6 @@
       let items = collection.filter(i => i.category === currentCategory);
       const searchQuery = document.getElementById('searchBar').value.toLowerCase();
 
-      // Stats Update
       document.getElementById('statShelf').innerText = items.filter(i => i.status === 'shelf').length;
       document.getElementById('statWanted').innerText = items.filter(i => i.status === 'wanted').length;
       document.getElementById('statSecrets').innerText = items.filter(i => i.status === 'secret').length;
@@ -414,9 +500,10 @@
       const grid = document.getElementById('figureGrid');
       grid.innerHTML = items.map(item => `
         <div class="figure-card ${item.status}" onclick="toggleStatus(${item.id})">
+          <div class="edit-btn" onclick="openEditModal(event, ${item.id})">✏️</div>
           ${item.status === 'shelf' || item.status === 'secret' ? '<div class="status-badge badge-owned">✓</div>' : ''}
           ${item.status === 'wanted' ? '<div class="status-badge badge-wanted">♥</div>' : ''}
-          <img class="figure-img" src="${item.img}" alt="${item.name}">
+          <img class="figure-img" src="${item.img || placeholderSvg}" alt="${item.name}">
           <div class="figure-name">${item.name}</div>
           <div style="font-size:0.65rem; color:var(--text-muted);">${item.series}</div>
         </div>
@@ -434,48 +521,75 @@
       }
     }
 
-    function openModal() { document.getElementById('addModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('addModal').style.display = 'none'; }
+    function handleFileUpload(event, previewId, inputTargetId) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById(previewId).src = e.target.result;
+          document.getElementById(inputTargetId).value = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
 
-    function saveItem() {
+    function openAddModal() {
+      document.getElementById('addModal').style.display = 'flex';
+      if (currentCategory) document.getElementById('inputCategory').value = currentCategory;
+    }
+
+    function openEditModal(e, id) {
+      e.stopPropagation(); // Stop toggling status when clicking pencil
+      const item = collection.find(i => i.id === id);
+      if (!item) return;
+
+      document.getElementById('editId').value = item.id;
+      document.getElementById('editName').value = item.name;
+      document.getElementById('editSeries').value = item.series;
+      document.getElementById('editImg').value = item.img;
+      document.getElementById('previewEdit').src = item.img || placeholderSvg;
+      document.getElementById('editStatus').value = item.status;
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function saveNewItem() {
       const category = document.getElementById('inputCategory').value;
       const series = document.getElementById('inputSeries').value || 'General';
       const name = document.getElementById('inputName').value || 'New Figure';
-      const img = document.getElementById('inputImg').value || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150';
+      const img = document.getElementById('inputImg').value || placeholderSvg;
       const status = document.getElementById('inputStatus').value;
 
       collection.push({ id: Date.now(), category, series, name, status, img });
       saveData();
-      closeModal();
+      closeModal('addModal');
       if (currentCategory === category) renderFigures();
       else renderCategories();
     }
 
-    // Auto-generate Web App Manifest for PWA Support
-    const manifest = {
-      name: "Collectsy - Figure Tracker",
-      short_name: "Collectsy",
-      start_url: "./",
-      display: "standalone",
-      background_color: "#16120e",
-      theme_color: "#16120e",
-      icons: [{ src: "https://cdn-icons-png.flaticon.com/512/3081/3081559.png", sizes: "512x512", type: "image/png" }]
-    };
-    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-    const link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = manifestUrl;
-    document.head.appendChild(link);
+    function saveEditedItem() {
+      const id = parseInt(document.getElementById('editId').value);
+      const item = collection.find(i => i.id === id);
+      if (item) {
+        item.name = document.getElementById('editName').value;
+        item.series = document.getElementById('editSeries').value;
+        item.img = document.getElementById('editImg').value || placeholderSvg;
+        item.status = document.getElementById('editStatus').value;
+        saveData();
+        closeModal('editModal');
+        renderFigures();
+      }
+    }
 
-    // Dynamic Service Worker Registration for Offline Capability
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-        self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
-      `;
-      const swBlob = new Blob([swCode], { type: 'text/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+    function deleteCurrentItem() {
+      const id = parseInt(document.getElementById('editId').value);
+      if (confirm('Delete this figure from your shelf?')) {
+        collection = collection.filter(i => i.id !== id);
+        saveData();
+        closeModal('editModal');
+        renderFigures();
+      }
     }
 
     renderCategories();
